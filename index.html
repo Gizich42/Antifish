@@ -1,0 +1,1194 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Антифіш</title>
+<style>:root{color-scheme:light}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: one narrow column, like a phone inbox. Header with tabs, then a single working area (home, message card, result). */
+:root {
+  --bg: #EDF0F3;
+  --surface: #FFFFFF;
+  --surface-2: #F5F7F9;
+  --ink: #14212B;
+  --muted: #566774;
+  --line: #D3DAE0;
+  --accent: #0E6B6F;
+  --accent-ink: #FFFFFF;
+  --danger: #B3261E;
+  --danger-bg: #FBE8E6;
+  --ok: #1B7A46;
+  --ok-bg: #E2F3E9;
+  --warn: #7A5200;
+  --warn-bg: #FFF0CC;
+  --font-display: "Unbounded", "IBM Plex Sans", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E161C; --surface: #17222B; --surface-2: #1D2B36; --ink: #E6EDF2; --muted: #96A6B2; --line: #2B3A46;
+    --accent: #4FC3C8; --accent-ink: #06282A; --danger: #FF8F86; --danger-bg: #3B1D1B; --ok: #72D69E; --ok-bg: #14301F;
+    --warn: #F2C766; --warn-bg: #352A10; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E161C; --surface: #17222B; --surface-2: #1D2B36; --ink: #E6EDF2; --muted: #96A6B2; --line: #2B3A46;
+  --accent: #4FC3C8; --accent-ink: #06282A; --danger: #FF8F86; --danger-bg: #3B1D1B; --ok: #72D69E; --ok-bg: #14301F;
+  --warn: #F2C766; --warn-bg: #352A10; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55;
+  padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 20px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.45rem, 5vw, 2rem); line-height: 1.2; letter-spacing: -0.01em; }
+h2 { font-family: var(--font-display); font-weight: 500; font-size: 1.15rem; line-height: 1.3; }
+h3 { font-size: 1rem; font-weight: 600; }
+p { margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+/* header */
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 10px; }
+.brand i { width: 26px; height: 26px; border-radius: 7px; background: var(--accent); display: grid; place-items: center; }
+.brand i::after { content: ""; width: 10px; height: 10px; border: 2.5px solid var(--accent-ink); border-radius: 50%; }
+.tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+.tab { border: 0; background: transparent; padding: 7px 12px; border-radius: 8px; font-size: 0.875rem; font-weight: 500; color: var(--muted); }
+.tab[aria-current="page"] { background: var(--accent); color: var(--accent-ink); }
+
+/* panels */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.lead { color: var(--muted); max-width: 62ch; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px) { .fields { grid-template-columns: 1fr; } }
+label.f { display: grid; gap: 5px; font-size: 0.8125rem; font-weight: 500; color: var(--muted); }
+input[type="text"] { font: inherit; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; }
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 560px) { .modes { grid-template-columns: 1fr; } }
+.mode { text-align: left; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 6px; transition: border-color .15s, transform .15s; }
+.mode:hover { border-color: var(--accent); }
+.mode b { font-family: var(--font-display); font-weight: 500; font-size: 0.95rem; }
+.mode span { color: var(--muted); font-size: 0.875rem; }
+.mode em { font-style: normal; font-size: 0.8125rem; font-weight: 600; color: var(--accent); }
+details.box { border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+details.box > summary { cursor: pointer; padding: 11px 14px; font-weight: 500; font-size: 0.9375rem; }
+details.box > .in { padding: 0 14px 14px; display: grid; gap: 8px; font-size: 0.9375rem; }
+details.box ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 4px; }
+.mono { font-family: var(--font-mono); font-size: 0.875em; }
+
+/* progress */
+.prog { display: grid; gap: 8px; }
+.prog-row { display: flex; justify-content: space-between; gap: 10px; font-size: 0.875rem; color: var(--muted); }
+.bar { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+
+/* message cards */
+.chip { display: inline-block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); }
+.msg { border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.avatar { flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 600; }
+.from { font-weight: 600; overflow-wrap: anywhere; }
+.sub { font-size: 0.8125rem; color: var(--muted); }
+.subj { font-size: 1.0625rem; font-weight: 600; padding-top: 4px; border-top: 1px solid var(--line); padding-block: 12px 0; }
+.body { display: grid; gap: 10px; overflow-wrap: anywhere; }
+.linkish { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; font-weight: 500; overflow-wrap: anywhere; }
+.bubble { background: var(--surface); border: 1px solid var(--line); border-radius: 4px 16px 16px 16px; padding: 12px 14px; display: grid; gap: 8px; overflow-wrap: anywhere; }
+.reveal { border-left: 3px solid var(--warn); background: var(--warn-bg); color: var(--warn); border-radius: 6px; padding: 9px 12px; font-size: 0.875rem; overflow-wrap: anywhere; }
+.reveal b { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.tool { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 12px; font-size: 0.875rem; font-weight: 500; }
+.tool[aria-pressed="true"] { border-color: var(--warn); background: var(--warn-bg); color: var(--warn); }
+
+/* answering */
+.conf { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+.conf legend { font-size: 0.8125rem; font-weight: 500; color: var(--muted); padding: 0; margin-bottom: 2px; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; }
+.seg span { display: block; text-align: center; padding: 8px 6px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.8125rem; background: var(--surface-2); }
+.seg input:checked + span { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.seg input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.verdict { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn { border: 1px solid transparent; border-radius: 10px; padding: 14px 16px; font-weight: 600; font-size: 1rem; }
+.btn.phish { background: var(--danger); color: var(--surface); }
+.btn.safe { background: var(--ok); color: var(--surface); }
+.btn.main { background: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: var(--surface); border-color: var(--line); color: var(--ink); }
+:root[data-theme="dark"] .btn.phish, :root[data-theme="dark"] .btn.safe { color: #0E161C; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.phish, :root:not([data-theme="light"]) .btn.safe { color: #0E161C; } }
+
+/* feedback */
+.fb { border-radius: 12px; padding: 16px; display: grid; gap: 12px; }
+.fb.ok { background: var(--ok-bg); }
+.fb.bad { background: var(--danger-bg); }
+.fb h3 { font-size: 1.0625rem; }
+.fb.ok h3 { color: var(--ok); }
+.fb.bad h3 { color: var(--danger); }
+.signs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.signs li { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; font-size: 0.9375rem; }
+.tag { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; margin-top: 2px; white-space: nowrap; }
+.tag.bad { background: var(--danger); color: var(--surface); }
+.tag.ok { background: var(--ok); color: var(--surface); }
+:root[data-theme="dark"] .tag.bad, :root[data-theme="dark"] .tag.ok { color: #0E161C; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tag.bad, :root:not([data-theme="light"]) .tag.ok { color: #0E161C; } }
+
+/* results */
+.score { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.score big { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.4rem, 10vw, 3.4rem); line-height: 1; }
+.score span { color: var(--muted); }
+.cats { display: grid; gap: 12px; }
+.cat { display: grid; gap: 5px; }
+.cat-row { display: flex; justify-content: space-between; gap: 10px; font-size: 0.9375rem; }
+.cat-row b { font-variant-numeric: tabular-nums; }
+.meter { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.meter > span { display: block; height: 100%; border-radius: 99px; }
+.m-classic { background: var(--warn); }
+.m-ai { background: var(--danger); }
+.m-legit { background: var(--ok); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.stat { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 2px; }
+.stat b { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.8125rem; color: var(--muted); }
+.insight { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 12px 14px; font-size: 0.9375rem; }
+.review { display: grid; gap: 8px; }
+.rv { border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.rv > summary { cursor: pointer; padding: 10px 12px; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; list-style: none; }
+.rv > summary::-webkit-details-marker { display: none; }
+.mark { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 0.8125rem; font-weight: 700; }
+.mark.y { background: var(--ok); color: var(--surface); }
+.mark.n { background: var(--danger); color: var(--surface); }
+.rv-t { min-width: 0; }
+.rv-t b { display: block; overflow-wrap: anywhere; font-size: 0.9375rem; }
+.rv-t span { font-size: 0.8125rem; color: var(--muted); }
+.rv > .in { padding: 4px 12px 14px; display: grid; gap: 10px; }
+textarea { width: 100%; min-height: 150px; font-family: var(--font-mono); font-size: 0.75rem; background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px; resize: vertical; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* guide */
+.stop { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.stop > div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 6px; align-content: start; }
+.stop .ltr { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; color: var(--accent); line-height: 1; }
+.stop p { font-size: 0.9375rem; color: var(--muted); }
+ul.plain { margin: 0; padding-left: 1.1rem; display: grid; gap: 6px; }
+.note { font-size: 0.8125rem; color: var(--muted); }
+.steps { display: grid; gap: 12px; }
+.step { display: grid; grid-template-columns: auto 1fr; gap: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.step-n { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; }
+.step-b { display: grid; gap: 8px; min-width: 0; }
+.step-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.step-b p { color: var(--muted); font-size: 0.9375rem; }
+.state { font-size: 0.75rem; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
+.state.done { background: var(--ok-bg); border-color: transparent; color: var(--ok); }
+.err { color: var(--danger); font-size: 0.875rem; font-weight: 500; }
+textarea.short { min-height: 96px; }
+a.btn { text-decoration: none; display: inline-block; }
+.btn.sm { padding: 10px 14px; font-size: 0.9375rem; }
+.tbl { overflow-x: auto; }
+.tbl table { border-collapse: collapse; width: 100%; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.tbl th, .tbl td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tbl th { color: var(--muted); font-weight: 500; font-size: 0.8125rem; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+/* ---------- Дані: повідомлення ---------- */
+var CONTEXT = [
+  ["Ви", "Саша, учень або учениця ліцею №12."],
+  ["Банк", "ПівденьБанк, офіційний сайт pivdenbank.ua"],
+  ["Доставка", "ШвидкоПошта, сайт shvydkopost.ua. Ви чекаєте посилку з книжкою."],
+  ["Магазин", "КнигаМаркет, сайт knyhamarket.com.ua. Нещодавно ви замовили там збірник задач з фізики."],
+  ["Школа", "Ліцей №12, сайт lyceum12.edu.ua. Електронний журнал: zhurnal.lyceum12.edu.ua"],
+  ["Розваги", "StreamBox (сайт streambox.com) і соцмережа з відео Gramy (сайт gramy.com). В обох у вас є акаунт."],
+  ["Ігри та хмара", "Гра Піксельвіль (pixelville.com) і сховище файлів ДискХмара (diskhmara.com). В обох у вас є акаунт."],
+  ["Торгівля", "Маркетплейс ТоргМайдан (torgmaidan.com.ua), де ви іноді продаєте речі."],
+  ["Зв’язок", "Мобіка (mobika.ua), ваш мобільний оператор."],
+  ["Класна", "Класний керівник Олена Петрівна, її шкільна адреса o.petrivna@lyceum12.edu.ua."]
+];
+
+var ORIGIN = {
+  ai: "Фішинг, створений за допомогою ШІ",
+  classic: "Класичний фішинг за шаблоном",
+  legit: "Справжнє повідомлення"
+};
+var CHANNEL = { email: "E-mail", sms: "SMS", chat: "Месенджер" };
+
+var MSGS = [
+  { id: "M01", channel: "email", origin: "ai", phish: true,
+    from: "Служба безпеки ПівденьБанк", det: "security@pivdenbank-support.top",
+    subject: "Підтвердження входу з нового пристрою",
+    body: ["Доброго дня, Сашо!", "Ми помітили вхід до вашого рахунку з нового пристрою (Windows, Київ). Якщо це були ви, нічого робити не потрібно.", "Якщо ви не впізнаєте цю активність, підтвердьте особу протягом 24 годин, щоб ми могли зберегти доступ до рахунку.", "Дякуємо, що обираєте ПівденьБанк. Ваша безпека для нас важлива."],
+    link: { text: "Підтвердити особу в кабінеті", real: "https://pivdenbank-secure-login.top/verify?id=88213" },
+    signs: [
+      { k: "bad", t: "Відправник", x: "Домен pivdenbank-support.top не є сайтом банку. Офіційна адреса: pivdenbank.ua." },
+      { k: "bad", t: "Посилання", x: "Напис на посиланні виглядає безпечно, але веде воно на інший домен (.top)." },
+      { k: "bad", t: "Тиск", x: "«Протягом 24 годин» і загроза втратити доступ змушують діяти без перевірки." },
+      { k: "bad", t: "Мова", x: "Лист без жодної помилки і звертається до вас на ім’я. Для тексту від ШІ це звичайна річ, тому відсутність помилок нічого не доводить." }
+    ] },
+  { id: "M02", channel: "sms", origin: "classic", phish: true,
+    from: "+380 50 000 00 01", det: "Номер не збережений у ваших контактах.",
+    body: ["ШвидкоПошта: Ваша посилка затримана на митниці!! Сплатить збір 29 грн, щоб отримать посилку:"],
+    link: { text: "shvydkopost-ua.pay-cargo.site/29", real: "http://shvydkopost-ua.pay-cargo.site/29" },
+    signs: [
+      { k: "bad", t: "Посилання", x: "Справжній сайт доставки: shvydkopost.ua. Тут справжня назва домену pay-cargo.site." },
+      { k: "bad", t: "Мова", x: "«Сплатить» і «отримать» не відповідають українській нормі. Для шаблонних SMS це типова ознака." },
+      { k: "bad", t: "Гроші", x: "Невелика сума «збору» потрібна, щоб отримати дані вашої картки." },
+      { k: "bad", t: "Відправник", x: "Звичайний мобільний номер замість назви служби." }
+    ] },
+  { id: "M03", channel: "email", origin: "legit", phish: false,
+    from: "Електронний журнал", det: "noreply@zhurnal.lyceum12.edu.ua",
+    subject: "Нова оцінка: алгебра",
+    body: ["Вітаємо, Сашо.", "У вашому щоденнику з’явилась нова оцінка з алгебри (контрольна робота, 10 балів).", "Переглянути деталі можна в застосунку «Електронний журнал» або на сайті школи."],
+    link: { text: "zhurnal.lyceum12.edu.ua", real: "https://zhurnal.lyceum12.edu.ua" },
+    signs: [
+      { k: "ok", t: "Відправник", x: "Домен листа zhurnal.lyceum12.edu.ua збігається з адресою журналу вашої школи." },
+      { k: "ok", t: "Посилання", x: "Адреса посилання така ж, як на написі." },
+      { k: "ok", t: "Запити", x: "Лист нічого не просить: ні пароля, ні грошей, ні терміновості." }
+    ] },
+  { id: "M04", channel: "chat", origin: "ai", phish: true,
+    from: "Максим (однокласник)", det: "Контакт збережений у вас як «Максим Д.». Остання переписка була три тижні тому.",
+    body: ["Привіт! Це Максим із 9-Б 🙂 Пам’ятаєш, ми разом робили проєкт з географії?", "Я пройшов у фінал шкільного конкурсу, а мені не вистачає голосів. Це займе 10 секунд: натисни на посилання й увійди через свій акаунт, щоб голос зарахувався."],
+    link: { text: "konkurs-golos.ua/maksym", real: "https://konkurs-golos.click/login?ref=maksym" },
+    signs: [
+      { k: "bad", t: "Запит даних", x: "Щоб «проголосувати», не потрібно входити в акаунт. Це спосіб украсти пароль." },
+      { k: "bad", t: "Посилання", x: "Реальна адреса веде на konkurs-golos.click, а не на сайт школи." },
+      { k: "bad", t: "Контекст", x: "Деталі про проєкт з географії роблять повідомлення правдоподібним. Акаунт друга могли зламати, а текст допомагає написати ШІ." },
+      { k: "ok", t: "Що робити", x: "Напишіть Максиму іншим способом або запитайте при зустрічі, чи він це надсилав." }
+    ] },
+  { id: "M05", channel: "sms", origin: "legit", phish: false,
+    from: "PivdenBank", det: "Відправник у вашому телефоні в одній переписці з попередніми кодами банку.",
+    body: ["Код підтвердження: 482915. Оплата 129,00 UAH, StreamBox. Нікому не повідомляйте код. Якщо це не ви, зателефонуйте за номером на звороті картки."],
+    link: null,
+    signs: [
+      { k: "ok", t: "Контекст", x: "Ви щойно платили за підписку, тому код очікуваний." },
+      { k: "ok", t: "Без посилань", x: "У повідомленні немає посилання і не просять вводити дані деінде." },
+      { k: "ok", t: "Попередження", x: "Банк прямо просить нікому не казати код. Шахраї просять його надіслати." }
+    ] },
+  { id: "M06", channel: "email", origin: "ai", phish: true,
+    from: "StreamBox Billing", det: "billing@streambox-payments.com",
+    subject: "Не вдалося списати оплату за підписку",
+    body: ["Привіт, Сашо!", "Нам не вдалося списати 149 грн за наступний місяць підписки StreamBox. Щоб не втратити доступ до улюблених серіалів, оновіть платіжні дані.", "Це займе менше хвилини. Якщо дані не оновити до завтра, підписку буде призупинено."],
+    link: { text: "Оновити платіжні дані", real: "https://streambox.account-update.cc/billing" },
+    signs: [
+      { k: "bad", t: "Відправник", x: "Сервіс розміщений на streambox.com, а лист прийшов з streambox-payments.com." },
+      { k: "bad", t: "Посилання", x: "Реальний домен account-update.cc не має стосунку до StreamBox." },
+      { k: "bad", t: "Тиск", x: "Обмежений час і загроза втратити доступ." },
+      { k: "ok", t: "Що робити", x: "Відкрийте streambox.com самостійно і перевірте стан підписки в налаштуваннях." }
+    ] },
+  { id: "M07", channel: "email", origin: "classic", phish: true,
+    from: "Лотерея «Щасливий день»", det: "prize@shchaslyvyi-den.biz",
+    subject: "ВІТАЄМО!!! Ви виграли iPhone 15 Pro",
+    body: ["Шановний користувач!!!", "Ваш e-mail був вибраний випадковим чином і ви виграли ПРИЗ: iPhone 15 Pro!", "Для отримання призу заповніть анкету і сплатіть доставку 99 грн. Пропозиція дійсна тільки 2 години!!!"],
+    link: { text: "ОТРИМАТИ ПРИЗ", real: "http://shchaslyvyi-den.biz/get-prize" },
+    signs: [
+      { k: "bad", t: "Контекст", x: "Ви не брали участі в жодній лотереї. Виграш, про який ви не знали, майже завжди обман." },
+      { k: "bad", t: "Гроші", x: "Приз «безкоштовний», але просять оплатити доставку." },
+      { k: "bad", t: "Тиск", x: "«Лише 2 години» і великі літери з трьома знаками оклику." },
+      { k: "bad", t: "Звернення", x: "«Шановний користувач» означає, що лист розіслано всім." }
+    ] },
+  { id: "M08", channel: "email", origin: "legit", phish: false,
+    from: "Електронний журнал", det: "noreply@zhurnal.lyceum12.edu.ua",
+    subject: "Пароль змінено",
+    body: ["Сашо, пароль до вашого облікового запису в електронному журналі було змінено сьогодні о 08:14.", "Якщо це зробили ви, більше нічого робити не потрібно.", "Якщо це були не ви, відкрийте сайт zhurnal.lyceum12.edu.ua самостійно (введіть адресу в браузері) і зверніться до класного керівника."],
+    link: null,
+    signs: [
+      { k: "ok", t: "Відправник", x: "Домен збігається з адресою журналу вашої школи." },
+      { k: "ok", t: "Порада", x: "Лист не дає посилання для «термінового входу». Він радить ввести адресу вручну і звернутися до вчителя." },
+      { k: "ok", t: "Тиск", x: "Тут немає таймера чи погроз. Це тільки сповіщення про подію." }
+    ] },
+  { id: "M09", channel: "email", origin: "ai", phish: true,
+    from: "Адміністрація ліцею №12", det: "office@lyceum12-admin.info",
+    subject: "Анкета для учнів 9–11 класів до 16:00",
+    body: ["Шановні учні та батьки!", "З метою актуалізації даних для списків на іспити просимо до 16:00 сьогодні заповнити коротку онлайн-анкету. У ній потрібно вказати ПІБ, дату народження, номер телефону та логін і пароль від електронного журналу.", "Учні, які не заповнять анкету вчасно, не будуть включені до списків.", "З повагою, адміністрація ліцею №12"],
+    link: { text: "Відкрити анкету", real: "https://forms-lyceum12.xyz/anketa" },
+    signs: [
+      { k: "bad", t: "Відправник", x: "Школа має домен lyceum12.edu.ua. Домен lyceum12-admin.info зареєструвати може будь-хто." },
+      { k: "bad", t: "Запит даних", x: "Жодна школа не просить пароль від журналу в анкеті." },
+      { k: "bad", t: "Тиск", x: "Дедлайн «до 16:00» і загроза не потрапити в списки." },
+      { k: "bad", t: "Мова", x: "Офіційний стиль без помилок виглядає переконливо. ШІ добре імітує ділові листи." }
+    ] },
+  { id: "M10", channel: "email", origin: "legit", phish: false,
+    from: "КнигаМаркет", det: "orders@knyhamarket.com.ua",
+    subject: "Замовлення №48217 відправлено",
+    body: ["Сашо, ваше замовлення №48217 («Фізика. Збірник задач», 1 шт.) передано до ШвидкоПошти.", "Номер відправлення: UA 7714 2290 15. Очікувана дата доставки: 24 жовтня.", "Відстежити посилку можна в особистому кабінеті на knyhamarket.com.ua."],
+    link: { text: "knyhamarket.com.ua/cabinet", real: "https://knyhamarket.com.ua/cabinet" },
+    signs: [
+      { k: "ok", t: "Контекст", x: "Ви справді замовляли цю книжку, а номер замовлення і назва збігаються." },
+      { k: "ok", t: "Відправник і посилання", x: "Домен knyhamarket.com.ua однаковий у листі та в посиланні." },
+      { k: "ok", t: "Запити", x: "Лист нічого не вимагає. Він тільки повідомляє про відправлення." }
+    ] },
+  { id: "M11", channel: "sms", origin: "classic", phish: true,
+    from: "+380 97 000 00 02", det: "Номер не збережений у ваших контактах.",
+    body: ["Привіт, це Діма з 10-А, пишу з нового номера, старий телефон зламався. Позич, будь ласка, 300 грн на картку, терміново, завтра віддам. Номер картки скину зараз."],
+    link: null,
+    signs: [
+      { k: "bad", t: "Відправник", x: "Невідомий номер, який називає себе знайомим." },
+      { k: "bad", t: "Гроші", x: "Просять терміново переказати гроші на картку." },
+      { k: "bad", t: "Тиск", x: "«Терміново» і пояснення, чому не можна зателефонувати чи перевірити." },
+      { k: "ok", t: "Що робити", x: "Зателефонуйте Дімі на старий номер або запитайте однокласників." }
+    ] },
+  { id: "M12", channel: "sms", origin: "ai", phish: true,
+    from: "ShvydkoPost", det: "Ім’я відправника SMS можна підробити, воно відображається в одній переписці зі справжніми повідомленнями служби.",
+    body: ["ШвидкоПошта: Посилку №UA7721 не вдалося вручити, адреса вказана неповно. Уточніть адресу до 18:00, інакше відправлення повернеться відправнику."],
+    link: { text: "shvydkopost.ua/addr/UA7721", real: "https://shvydkopost-delivery.help/addr/UA7721" },
+    signs: [
+      { k: "bad", t: "Посилання", x: "Напис імітує shvydkopost.ua, але справжня адреса веде на shvydkopost-delivery.help." },
+      { k: "bad", t: "Тиск", x: "Дедлайн 18:00 і загроза повернення посилки." },
+      { k: "bad", t: "Мова", x: "Текст грамотний і схожий на справжній. Імені відправника в SMS також не можна довіряти." },
+      { k: "ok", t: "Що робити", x: "Введіть номер посилки на сайті shvydkopost.ua вручну." }
+    ] },
+  { id: "M13", channel: "chat", origin: "legit", phish: false,
+    from: "Ірина (однокласниця)", det: "Контакт у вашому списку, переписка триває місяцями.",
+    body: ["Привіт! Скинеш фото домашки з фізики? Я була на тренуванні 🙈", "І нагадай, на коли завдання: на п’ятницю чи на понеділок?"],
+    link: null,
+    signs: [
+      { k: "ok", t: "Контекст", x: "Звичайне прохання від людини, з якою ви постійно спілкуєтесь, у знайомому стилі." },
+      { k: "ok", t: "Без ризику", x: "Немає посилань, грошей чи просьби ввести дані." }
+    ] },
+  { id: "M14", channel: "email", origin: "ai", phish: true,
+    from: "Команда підтримки Gramy", det: "copyright@gramy-support.help",
+    subject: "Скарга на порушення авторських прав у вашому акаунті",
+    body: ["Вітаємо, Сашо!", "Ми отримали скаргу щодо відео у вашому профілі: власник прав стверджує, що ви використали музику без дозволу.", "Щоб подати апеляцію й уникнути блокування акаунту, заповніть форму протягом 12 годин. Для перевірки власника потрібно вказати логін, пароль і код із SMS."],
+    link: { text: "Подати апеляцію", real: "https://gramy-appeal.help/form" },
+    signs: [
+      { k: "bad", t: "Відправник", x: "Сервіс розміщений на gramy.com, а лист прийшов з gramy-support.help." },
+      { k: "bad", t: "Запит даних", x: "Просять пароль і код із SMS. Справжня підтримка ніколи цього не робить." },
+      { k: "bad", t: "Тиск", x: "12 годин і загроза блокування." },
+      { k: "bad", t: "Мова", x: "Юридичний стиль звучить переконливо, але це лише форма." }
+    ] },
+  { id: "M15", channel: "email", origin: "classic", phish: true,
+    from: "ПівденьБанк Безпека", det: "noreply@pivden-bank-ua.info",
+    subject: "Ваш рахунок заблокован",
+    body: ["Шановний клієнт, ваш рахунок буде заблокований!", "Ми виявили підозрілу діяльність. Для розблокування негайно перейдіть по посиланню і введіть номер карти, термін дії та CVV код.", "Якщо ви не зробите цього сьогодні, рахунок буде видалений."],
+    link: { text: "http://pivden-bank-ua.info/unlock", real: "http://pivden-bank-ua.info/unlock" },
+    signs: [
+      { k: "bad", t: "Запит даних", x: "Номер карти і CVV просять лише шахраї." },
+      { k: "bad", t: "Відправник", x: "Домен pivden-bank-ua.info, а не pivdenbank.ua." },
+      { k: "bad", t: "Мова", x: "«Заблокован» і «перейдіть по посиланню» зайві помилки для листа від банку." },
+      { k: "bad", t: "Посилання", x: "Адреса починається з http, без захищеного з’єднання." }
+    ] },
+  { id: "M16", channel: "sms", origin: "classic", phish: true,
+    from: "+380 66 000 00 03", det: "Номер не збережений у ваших контактах.",
+    body: ["Вам нараховано соціальну виплату 5000 грн!! Щоб отримати гроші, перейдіть за посиланням і введіть дані картки:"],
+    link: { text: "vyplata-ukr.cfd/5000", real: "http://vyplata-ukr.cfd/5000" },
+    signs: [
+      { k: "bad", t: "Контекст", x: "Ви нічого не оформлювали, а виплати не нараховуються через SMS із випадкового номера." },
+      { k: "bad", t: "Запит даних", x: "Просять дані картки «для зарахування», але для цього вони не потрібні." },
+      { k: "bad", t: "Посилання", x: "Підозрілий домен із зоною .cfd." }
+    ] },
+
+  /* ----- Фішинг, створений ШІ (ще 10) ----- */
+  { id: "M17", channel: "email", origin: "ai", phish: true,
+    from: "Піксельвіль", det: "gifts@pixelville-rewards.net",
+    subject: "Вам подарунок: 500 кристалів за ваш рівень",
+    body: ["Привіт, Сашо!", "Дякуємо, що граєте в Піксельвіль. Для гравців вашого рівня ми підготували подарунок: 500 кристалів і рідкісний скін.", "Подарунок діє 48 годин. Щоб його отримати, увійдіть в акаунт за посиланням нижче."],
+    link: { text: "Забрати подарунок", real: "https://pixelville-gifts.click/login" },
+    signs: [
+      { k: "bad", t: "Відправник", x: "Гра розміщена на pixelville.com, а лист прийшов з pixelville-rewards.net." },
+      { k: "bad", t: "Запит даних", x: "Щоб отримати подарунок, просять увійти в акаунт. Так крадуть логіни й паролі." },
+      { k: "bad", t: "Тиск", x: "Подарунок «діє 48 годин»." },
+      { k: "bad", t: "Посилання", x: "Реальна адреса веде на домен із зоною .click." }
+    ] },
+  { id: "M18", channel: "email", origin: "ai", phish: true,
+    from: "ДискХмара", det: "billing@diskhmara-storage.cc",
+    subject: "Сховище заповнене на 98%",
+    body: ["Сашо, ваше сховище ДискХмара заповнене на 98%.", "Якщо не розширити тариф, через 48 годин нові файли перестануть зберігатися, а старі можуть бути видалені.", "Оновіть тариф за 49 грн на місяць, щоб зберегти доступ до всіх документів."],
+    link: { text: "Розширити сховище", real: "https://diskhmara-upgrade.cc/pay" },
+    signs: [
+      { k: "bad", t: "Відправник", x: "Сервіс працює на diskhmara.com, а лист прийшов з diskhmara-storage.cc." },
+      { k: "bad", t: "Тиск", x: "Загроза втратити файли за 48 годин." },
+      { k: "bad", t: "Гроші", x: "Оплату пропонують провести за посиланням у листі." },
+      { k: "ok", t: "Що робити", x: "Відкрийте застосунок або diskhmara.com самостійно й перевірте, скільки місця зайнято." }
+    ] },
+  { id: "M19", channel: "sms", origin: "ai", phish: true,
+    from: "Mobika", det: "Ім’я відправника в SMS можна підробити, воно може з’явитися в одній переписці зі справжніми повідомленнями оператора.",
+    body: ["Мобіка: Ваш номер буде тимчасово відключено через неповні дані абонента. Підтвердьте особу до 20:00 сьогодні:"],
+    link: { text: "mobika.ua/verify", real: "https://mobika-verify.help/id" },
+    signs: [
+      { k: "bad", t: "Посилання", x: "Напис імітує mobika.ua, але справжня адреса веде на mobika-verify.help." },
+      { k: "bad", t: "Тиск", x: "Загроза відключення і дедлайн «до 20:00»." },
+      { k: "bad", t: "Мова", x: "Текст грамотний і схожий на офіційний, але це не доводить, що він справжній." }
+    ] },
+  { id: "M20", channel: "chat", origin: "ai", phish: true,
+    from: "Олена Петрівна (класний керівник)", det: "Повідомлення прийшло з номера, якого немає у ваших контактах. Ім’я в чаті може вказати будь-хто.",
+    body: ["Сашо, добрий день. Це Олена Петрівна, пишу з нового номера, зі старого зараз не можу.", "Мені терміново потрібна допомога: треба купити три електронні подарункові картки для переможців конкурсу, а я на нараді. Купи, будь ласка, і надішли мені їхні коди, сьогодні ж поверну гроші."],
+    link: null,
+    signs: [
+      { k: "bad", t: "Відправник", x: "Новий номер, який видає себе за вчительку. Справжня адреса вчительки: o.petrivna@lyceum12.edu.ua." },
+      { k: "bad", t: "Гроші", x: "Подарункові картки та їхні коди найчастіше просять шахраї, бо кошти неможливо повернути." },
+      { k: "bad", t: "Тиск", x: "«Терміново» і пояснення, чому не можна зателефонувати." },
+      { k: "ok", t: "Що робити", x: "Підійдіть до вчительки або зателефонуйте їй на відомий вам номер." }
+    ] },
+  { id: "M21", channel: "email", origin: "ai", phish: true, ctx: "Ви справді виставили навушники на продаж на ТоргМайдан.",
+    from: "ТоргМайдан Оплата", det: "payments@torgmaidan-pay.top",
+    subject: "Покупець оплатив ваш товар: підтвердіть отримання коштів",
+    body: ["Привіт, Сашо!", "Покупець оплатив ваше оголошення «Навушники Bluetooth» (850 грн). Гроші вже зарезервовані.", "Щоб зарахувати їх на вашу картку, введіть номер картки, термін дії та CVV на захищеній сторінці. Резерв діє 24 години."],
+    link: { text: "Отримати 850 грн", real: "https://torgmaidan-pay.top/receive" },
+    signs: [
+      { k: "bad", t: "Запит даних", x: "Щоб отримати гроші, CVV не потрібен. Його просять, щоб зняти кошти з вашої картки." },
+      { k: "bad", t: "Відправник", x: "Маркетплейс працює на torgmaidan.com.ua, а лист прийшов з torgmaidan-pay.top." },
+      { k: "bad", t: "Тиск", x: "Резерв «діє 24 години»." },
+      { k: "bad", t: "Контекст", x: "Лист збігається з вашою ситуацією, і це добре підлаштована приманка. Перевіряйте оплату в застосунку." }
+    ] },
+  { id: "M22", channel: "email", origin: "ai", phish: true,
+    from: "Кабінет учня", det: "no-reply@lyceum12-cabinet.xyz",
+    subject: "Підтвердіть авторство роботи МАН до п’ятниці",
+    body: ["Шановний(а) Сашо,", "Ваш дослідницький проєкт для МАН потрапив на попередню перевірку оригінальності. Для завершення перевірки потрібно підтвердити авторство.", "Увійдіть у кабінет учня зі своїм логіном і паролем від електронного журналу, щоб завантажити підтвердження. Без цього роботу не допустять до другого етапу."],
+    link: { text: "Підтвердити авторство", real: "https://lyceum12-cabinet.xyz/login" },
+    signs: [
+      { k: "bad", t: "Відправник", x: "Школа має домен lyceum12.edu.ua, а лист прийшов з lyceum12-cabinet.xyz." },
+      { k: "bad", t: "Запит даних", x: "Пароль від журналу не потрібен для жодної перевірки роботи." },
+      { k: "bad", t: "Тиск", x: "Дедлайн до п’ятниці й загроза не потрапити на другий етап." },
+      { k: "bad", t: "Контекст", x: "ШІ швидко підлаштовує тему під вашу ситуацію, тому збіг з вашими справами не робить лист справжнім." }
+    ] },
+  { id: "M23", channel: "sms", origin: "ai", phish: true,
+    from: "PivdenBank", det: "Ім’я відправника SMS можна підробити, воно може з’явитися в одній переписці зі справжніми повідомленнями банку.",
+    body: ["ПівденьБанк: Спроба оплати 4 780 UAH у магазині ElectroMart. Якщо це не ви, скасуйте платіж протягом 10 хвилин:"],
+    link: { text: "pivdenbank.ua/cancel", real: "https://pivdenbank-cancel.top/p/4780" },
+    signs: [
+      { k: "bad", t: "Посилання", x: "Напис схожий на pivdenbank.ua, але реальна адреса веде на pivdenbank-cancel.top." },
+      { k: "bad", t: "Тиск", x: "Лише 10 хвилин і страх втратити гроші." },
+      { k: "ok", t: "Що робити", x: "Відкрийте застосунок банку або зателефонуйте за номером на звороті картки." }
+    ] },
+  { id: "M24", channel: "email", origin: "ai", phish: true,
+    from: "Gramy Verified", det: "verify@gramy-badge.help",
+    subject: "Ваш акаунт відібрано для верифікації",
+    body: ["Вітаємо, Сашо!", "Ваш профіль відібрано для програми верифікації Gramy. Верифіковані автори отримують синю позначку та ширше охоплення.", "Щоб пройти перевірку, підтвердьте пароль і код із SMS за посиланням. Запрошення діє 24 години."],
+    link: { text: "Пройти верифікацію", real: "https://gramy-badge.help/verify" },
+    signs: [
+      { k: "bad", t: "Відправник", x: "Соцмережа розміщена на gramy.com, а лист прийшов з gramy-badge.help." },
+      { k: "bad", t: "Запит даних", x: "Пароль і код із SMS не потрібні для верифікації." },
+      { k: "bad", t: "Тиск і приманка", x: "Синя позначка й обмежений час змушують поспішати." }
+    ] },
+  { id: "M25", channel: "chat", origin: "ai", phish: true,
+    from: "Марина (організатори МАН)", det: "Невідомий користувач. Написав першим, у ваших контактах такого немає.",
+    body: ["Привіт, Сашо! Я Марина з оргкомітету олімпіад. Маєш 5 хвилин? Нам потрібно підтвердити вашу участь у наступному етапі.", "Зараз на твій номер прийде SMS із кодом. Надішли його мені, і я закріплю заявку."],
+    link: null,
+    signs: [
+      { k: "bad", t: "Запит даних", x: "Код із SMS підтверджує вхід в акаунт. Його не можна нікому надсилати." },
+      { k: "bad", t: "Відправник", x: "Невідома людина, яка називає себе організатором. Перевірте інформацію на офіційному сайті чи в учителя." },
+      { k: "bad", t: "Контекст", x: "Привітний і діловий тон взято з вашої ситуації. Текст пише ШІ, але вимога та сама: назвати код." }
+    ] },
+  { id: "M26", channel: "email", origin: "ai", phish: true,
+    from: "Програма «Молодий дослідник»", det: "grants@molodyi-doslidnyk-grant.xyz",
+    subject: "Вас відібрано до другого етапу відбору на грант",
+    body: ["Вітаємо, Сашо!", "За результатами першого етапу ваш профіль включено до списку кандидатів на грант 12 000 грн для молодих дослідників.", "Для переходу до другого етапу заповніть профіль і завантажте фото паспорта та номер ІПН до 23:59 цього тижня."],
+    link: { text: "Заповнити профіль кандидата", real: "https://molodyi-doslidnyk-grant.xyz/apply" },
+    signs: [
+      { k: "bad", t: "Контекст", x: "Ви не подавали заявку, тому «другий етап» неможливий." },
+      { k: "bad", t: "Запит даних", x: "Фото паспорта й ІПН потрібні для шахрайств і крадіжки особистості." },
+      { k: "bad", t: "Відправник", x: "Домен із зоною .xyz не схожий на офіційний сайт програми." },
+      { k: "bad", t: "Тиск", x: "Дедлайн «до 23:59» і приваблива сума." }
+    ] },
+
+  /* ----- Класичний фішинг (ще 7) ----- */
+  { id: "M27", channel: "email", origin: "classic", phish: true,
+    from: "Barrister John Smith", det: "j.smith.law@mail-lawyer.biz",
+    subject: "ТЕРМІНОВО: Спадщина вашого родича",
+    body: ["Вітаю Вас, дорогий друже!", "Я адвокат Джон Сміт з Канади. Ваш далекий родич помер і залишив 4 500 000 доларів США. Ви єдиний спадкоємець.", "Щоб отримати гроші, відповідьте на цей лист і надішліть копію паспорта та 150 доларів для оформлення документів."],
+    link: null,
+    signs: [
+      { k: "bad", t: "Контекст", x: "Ви не знаєте цього «родича» і ніколи не листувалися з цим адвокатом." },
+      { k: "bad", t: "Гроші", x: "Щоб отримати великий спадок, просять заплатити наперед." },
+      { k: "bad", t: "Запит даних", x: "Копія паспорта потрібна для шахрайств." },
+      { k: "bad", t: "Звернення", x: "«Дорогий друже» і неприродний текст показують масову розсилку." }
+    ] },
+  { id: "M28", channel: "sms", origin: "classic", phish: true,
+    from: "+380 67 000 00 04", det: "Номер не збережений у ваших контактах.",
+    body: ["Ваша картка заблокована! Для розблокування терміново зателефонуйте за номером 0 800 000 000 і назвіть дані картки та код з SMS."],
+    link: null,
+    signs: [
+      { k: "bad", t: "Запит даних", x: "Реальний банк ніколи не просить назвати дані картки й код з SMS." },
+      { k: "bad", t: "Відправник", x: "Звичайний мобільний номер замість назви банку." },
+      { k: "bad", t: "Тиск", x: "«Терміново» і «заблокована»." },
+      { k: "ok", t: "Що робити", x: "Зателефонуйте за номером на звороті своєї картки." }
+    ] },
+  { id: "M29", channel: "email", origin: "classic", phish: true,
+    from: "Захист ПК", det: "alert@pc-defender-free.top",
+    subject: "УВАГА!!! Ваш комп’ютер заражено 7 вірусами",
+    body: ["Увага!! Ми виявили 7 вірусів на Вашому комп’ютері!!!", "Ваші фото і паролі в небезпеці. Завантажте безкоштовний антивірус ЗАРАЗ, поки не пізно."],
+    link: { text: "http://pc-defender-free.top/download.exe", real: "http://pc-defender-free.top/download.exe" },
+    signs: [
+      { k: "bad", t: "Контекст", x: "Лист не може бачити ваш комп’ютер. Так лякають, щоб ви встановили шкідливу програму." },
+      { k: "bad", t: "Посилання", x: "Файл .exe з невідомого сайта може бути вірусом." },
+      { k: "bad", t: "Тиск", x: "Великі літери, три знаки оклику та «поки не пізно»." }
+    ] },
+  { id: "M30", channel: "chat", origin: "classic", phish: true,
+    from: "Валерія", det: "Невідомий користувач, якого немає у ваших контактах.",
+    body: ["Привіт! Дивись, що я знайшла про тебе 😳", "Усі вже це бачили:"],
+    link: { text: "gramy-video.me/watch/8841", real: "http://gramy-video.me/login?next=watch" },
+    signs: [
+      { k: "bad", t: "Відправник", x: "Вас пише незнайома людина, яка буцімто знає, про що йдеться." },
+      { k: "bad", t: "Приманка", x: "Інтригує й лякає, щоб ви натиснули не думаючи." },
+      { k: "bad", t: "Посилання", x: "Сторінка просить увійти в Gramy. Це підробна форма для крадіжки пароля." }
+    ] },
+  { id: "M31", channel: "sms", origin: "classic", phish: true,
+    from: "+380 93 000 00 05", det: "Номер не збережений у ваших контактах.",
+    body: ["ВИ ВИГРАЛИ подарункову картку ТоргМайдан на 1000 грн!!! Заберіть приз сьогодні:"],
+    link: { text: "torgmaidan-prize.cfd/1000", real: "http://torgmaidan-prize.cfd/1000" },
+    signs: [
+      { k: "bad", t: "Контекст", x: "Ви не брали участі в жодній акції." },
+      { k: "bad", t: "Посилання", x: "Маркетплейс працює на torgmaidan.com.ua, а тут домен із зоною .cfd." },
+      { k: "bad", t: "Тиск", x: "«Сьогодні», великі літери й три знаки оклику." }
+    ] },
+  { id: "M32", channel: "email", origin: "classic", phish: true,
+    from: "Gramy", det: "no-reply@gramy-account.biz",
+    subject: "Ваш аккаунт буде видалений!!!",
+    body: ["Шановний користувач Gramy!", "Ваш аккаунт буде видалений через неактивность. Щоб зберегти аккаунт, підтвердіть Ваш Пароль сьогодні.", "Не підтвердите — всі відео будуть втрачені назавжди."],
+    link: { text: "ПІДТВЕРДИТИ ПАРОЛЬ", real: "http://gramy-account.biz/confirm" },
+    signs: [
+      { k: "bad", t: "Мова", x: "«Аккаунт», «неактивность», «підтвердите» і зайві великі літери у слові «Пароль»." },
+      { k: "bad", t: "Відправник", x: "Сервіс працює на gramy.com, а лист прийшов з gramy-account.biz." },
+      { k: "bad", t: "Запит даних", x: "Пароль у листі підтверджувати не просять." },
+      { k: "bad", t: "Тиск", x: "Загроза безповоротно втратити всі відео." }
+    ] },
+  { id: "M33", channel: "chat", origin: "classic", phish: true,
+    from: "Антон Інвест", det: "Невідомий користувач, написав першим.",
+    body: ["Привіт! Хочеш заробити? Вкладаєш 1000 грн, через 3 дні отримуєш 10 000 грн. Гарантія 100%!!! Вже заробили 300 школярів.", "Пиши мені в особисті, поки місця є!"],
+    link: null,
+    signs: [
+      { k: "bad", t: "Гроші", x: "Гарантований прибуток у десять разів за три дні не існує." },
+      { k: "bad", t: "Відправник", x: "Невідома людина, яка пише першою." },
+      { k: "bad", t: "Тиск", x: "«Поки місця є» і посилання на «300 школярів»." }
+    ] },
+
+  /* ----- Справжні повідомлення (ще 7) ----- */
+  { id: "M34", channel: "email", origin: "legit", phish: false, ctx: "Ви щойно самі натиснули «Забули пароль» на сайті Піксельвіль.",
+    from: "Піксельвіль", det: "no-reply@pixelville.com",
+    subject: "Скидання пароля",
+    body: ["Привіт, Сашо!", "Ви запросили скидання пароля для акаунта в Піксельвіль. Посилання діє 60 хвилин.", "Якщо ви цього не робили, просто проігноруйте лист: пароль залишиться без змін."],
+    link: { text: "pixelville.com/reset/x7Kq", real: "https://pixelville.com/reset/x7Kq" },
+    signs: [
+      { k: "ok", t: "Контекст", x: "Ви самі щойно запросили скидання, тому лист очікуваний." },
+      { k: "ok", t: "Відправник і посилання", x: "Домен pixelville.com збігається і в адресі відправника, і в посиланні." },
+      { k: "ok", t: "Порада", x: "Лист пропонує проігнорувати його, якщо запит зробили не ви, і не лякає наслідками." }
+    ] },
+  { id: "M35", channel: "sms", origin: "legit", phish: false,
+    from: "Mobika", det: "Відправник у тій самій переписці, де раніше були повідомлення оператора.",
+    body: ["Мобіка: Ваш рахунок поповнено на 100,00 грн. Баланс: 123,40 грн. Дякуємо, що ви з нами."],
+    link: null,
+    signs: [
+      { k: "ok", t: "Без дій", x: "Повідомлення лише інформує й нічого не просить зробити." },
+      { k: "ok", t: "Без посилання", x: "Немає посилань, кодів, термінів чи загроз." }
+    ] },
+  { id: "M36", channel: "chat", origin: "legit", phish: false,
+    from: "Мама", det: "Контакт «Мама», давня переписка.",
+    body: ["Сашо, не забудь по дорозі зі школи купити хліб. І забери Соню з гуртка о 14:00, добре?"],
+    link: null,
+    signs: [
+      { k: "ok", t: "Контекст", x: "Звичайне прохання від близької людини у знайомому стилі." },
+      { k: "ok", t: "Без ризику", x: "Немає посилань, коштів чи прохань надіслати дані." }
+    ] },
+  { id: "M37", channel: "email", origin: "legit", phish: false,
+    from: "Олена Петрівна", det: "o.petrivna@lyceum12.edu.ua",
+    subject: "Екскурсія завтра: збір о 8:30",
+    body: ["Доброго дня, 9-Б!", "Завтра екскурсія до музею. Збираємося о 8:30 біля школи. Візьміть із собою 100 грн готівкою на квитки, я збиратиму гроші на місці.", "Якщо хтось не зможе піти, напишіть мені до 18:00 сьогодні."],
+    link: null,
+    signs: [
+      { k: "ok", t: "Відправник", x: "Адреса збігається зі шкільною адресою класної керівниці." },
+      { k: "ok", t: "Гроші", x: "Кошти збирають особисто готівкою, а не просять переказати на невідому картку." },
+      { k: "ok", t: "Терміни", x: "Дедлайн пов’язаний із організацією поїздки, а не з погрозами." }
+    ] },
+  { id: "M38", channel: "email", origin: "legit", phish: false, ctx: "Ви щойно поділилися папкою «Проєкт МАН» зі своїм науковим керівником.",
+    from: "ДискХмара", det: "no-reply@diskhmara.com",
+    subject: "Доступ до папки надано",
+    body: ["Сашо, ви надали доступ до папки «Проєкт МАН» вашому науковому керівнику (О. Коваленко).", "Права: перегляд і коментування. Змінити доступ можна в налаштуваннях папки."],
+    link: { text: "diskhmara.com/folders/proekt-man", real: "https://diskhmara.com/folders/proekt-man" },
+    signs: [
+      { k: "ok", t: "Контекст", x: "Лист описує дію, яку ви щойно зробили самі." },
+      { k: "ok", t: "Відправник і посилання", x: "Домен diskhmara.com однаковий у відправника й посилання." },
+      { k: "ok", t: "Запити", x: "Нічого не просять ввести чи оплатити." }
+    ] },
+  { id: "M39", channel: "email", origin: "legit", phish: false, ctx: "Ви щойно ввійшли в Gramy на новому телефоні.",
+    from: "Gramy", det: "security@gramy.com",
+    subject: "Новий вхід у ваш акаунт",
+    body: ["Сашо, ми помітили вхід у ваш акаунт з нового пристрою (Android, Київ).", "Якщо це були ви, нічого робити не потрібно. Якщо ні, змініть пароль у налаштуваннях безпеки застосунку."],
+    link: null,
+    signs: [
+      { k: "ok", t: "Контекст", x: "Ви справді щойно входили з нового телефона." },
+      { k: "ok", t: "Відправник", x: "Домен gramy.com збігається з адресою сервісу." },
+      { k: "ok", t: "Порада", x: "Лист не дає посилання для «термінового входу». Він радить зайти в налаштування застосунку самостійно." }
+    ] },
+  { id: "M40", channel: "sms", origin: "legit", phish: false,
+    from: "PivdenBank", det: "Відправник у одній переписці з кодами й повідомленнями вашого банку.",
+    body: ["ПівденьБанк: Поповнення рахунку 500,00 UAH від «Мама». Баланс: 1 250,00 UAH."],
+    link: null,
+    signs: [
+      { k: "ok", t: "Без дій", x: "Банк повідомляє про зарахування й нічого не просить." },
+      { k: "ok", t: "Без посилання", x: "Немає посилань, кодів чи таймерів." }
+    ] }
+];
+
+
+/* ---------- Набори для дослідження ----------
+   A і B: два еквівалентні тести по 16 повідомлень (5 класичних, 6 від ШІ, 5 справжніх).
+   T: навчальний набір з 8 повідомлень. Жодне повідомлення не повторюється між наборами. */
+var SETS = {
+  A: ["M02", "M07", "M15", "M29", "M31", "M01", "M04", "M06", "M12", "M17", "M23", "M03", "M05", "M10", "M34", "M36"],
+  B: ["M11", "M16", "M27", "M30", "M32", "M09", "M14", "M18", "M19", "M22", "M25", "M08", "M13", "M37", "M38", "M40"],
+  T: ["M28", "M33", "M20", "M21", "M24", "M26", "M35", "M39"]
+};
+var STAGE_NAME = { pre: "Тест до навчання", train: "Навчання", post: "Тест після навчання", free: "Вільне тренування" };
+var PLAN = { 12: [4, 4, 4], 16: [5, 6, 5], 24: [8, 9, 7] };
+
+/* ---------- Стан і сховище ---------- */
+/* Налаштування: посилання на Google-форму для резервного збору (необов’язково).
+   FORM_URL: адреса форми з /viewform, FORM_ENTRY: номер поля, наприклад "entry.1234567890". */
+var FORM_URL = "", FORM_ENTRY = "";
+/* Адреса веб-застосунку Google Apps Script (див. apps-script.gs). Порожньо = таблиця не підключена. */
+var APPS_URL = "https://script.google.com/macros/s/AKfycbwUvGdYBO5Py-zP7sH9BM8NhdHv8qZH2A2eVpCMASZvyJTEIgXuC20qVDt659HzR-B2/exec";
+var S = { db: null, dbCodes: [], sheetCodes: [], sheetState: "off", skey: "", db: null, dbState: "off", saved: "", view: "home", stage: "pre", mode: "test", pid: "", cls: "", n: 16, date: "", setid: "", code: "", err: "", q: [], i: 0, ans: [], t0: 0, sender: false, link: false, conf: 2, fb: null, dataText: "", ana: null };
+function ls(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+S.pid = ls("af2_pid", ""); S.cls = ls("af2_cls", "");
+
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function pct(n, d) { return d ? Math.round(n * 100 / d) : 0; }
+function byId(id) { for (var i = 0; i < MSGS.length; i++) if (MSGS[i].id === id) return MSGS[i]; return null; }
+function pkey(p) { return String(p || "").trim().toLowerCase().replace(/\s+/g, " "); }
+function orderFor(key) { var s = 0; for (var i = 0; i < key.length; i++) s += key.charCodeAt(i); return s % 2 === 0 ? { pre: "A", post: "B" } : { pre: "B", post: "A" }; }
+function setMsgs(k) { return SETS[k].map(byId); }
+function pickSet(n) {
+  var plan = PLAN[n] || PLAN[16], kinds = ["classic", "ai", "legit"], out = [];
+  kinds.forEach(function (k, idx) { out = out.concat(shuffle(MSGS.filter(function (m) { return m.origin === k; })).slice(0, plan[idx])); });
+  return shuffle(out);
+}
+function isDone(stage) { var m = ls("af2_done", {})[pkey(S.pid)]; return !!(m && m[stage]); }
+function markDone(stage) { var all = ls("af2_done", {}), k = pkey(S.pid); all[k] = all[k] || {}; all[k][stage] = S.date; lsSet("af2_done", all); }
+function syncInputs() {
+  var p = document.getElementById("pid"), c = document.getElementById("cls");
+  if (p) S.pid = p.value; if (c) S.cls = c.value;
+  var d = document.getElementById("codes"); if (d) S.dataText = d.value;
+  var k = document.getElementById("skey"); if (k) S.skey = k.value;
+}
+
+/* ---------- Розмітка: загальне ---------- */
+function header() {
+  var tabs = [["home", "Тренажер"], ["guide", "Пам’ятка СТОП"], ["data", "Дані"], ["about", "Про проєкт"]];
+  var cur = S.view === "quiz" || S.view === "result" ? "home" : S.view;
+  return '<header class="top"><div class="brand"><i></i>Антифіш</div><nav class="tabs" aria-label="Розділи">' +
+    tabs.map(function (t) { return '<button class="tab" data-act="tab" data-v="' + t[0] + '"' + (cur === t[0] ? ' aria-current="page"' : "") + ">" + t[1] + "</button>"; }).join("") +
+    "</nav></header>";
+}
+function linkBlock(m) { return m.link ? '<p><span class="linkish">' + esc(m.link.text) + "</span></p>" : ""; }
+function msgHTML(m) {
+  var paras = m.body.map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("");
+  var initial = esc(m.from.replace(/[^A-Za-zА-Яа-яІіЇїЄєҐґ0-9+]/g, "").charAt(0) || "?");
+  var inner;
+  if (m.channel === "email") {
+    inner = '<div class="who"><div class="avatar" aria-hidden="true">' + initial + '</div><div><div class="from">' + esc(m.from) + '</div><div class="sub">Кому: вам</div></div></div>' +
+      '<div class="subj">' + esc(m.subject) + "</div>" + '<div class="body">' + paras + linkBlock(m) + "</div>";
+  } else {
+    inner = '<div class="who"><div class="avatar" aria-hidden="true">' + initial + '</div><div><div class="from">' + esc(m.from) + '</div><div class="sub">' + (m.channel === "sms" ? "SMS" : "Месенджер") + ", сьогодні</div></div></div>" +
+      '<div class="bubble">' + paras + linkBlock(m) + "</div>";
+  }
+  var ctx = m.ctx ? '<p class="sub"><b>Ситуація:</b> ' + esc(m.ctx) + "</p>" : "";
+  return '<article class="msg" aria-label="Повідомлення"><div><span class="chip">' + CHANNEL[m.channel] + "</span></div>" + ctx + inner + "</article>";
+}
+function signsHTML(m) {
+  return '<ul class="signs">' + m.signs.map(function (s) { return '<li><span class="tag ' + s.k + '">' + esc(s.t) + "</span><span>" + esc(s.x) + "</span></li>"; }).join("") + "</ul>";
+}
+
+/* ---------- Головна ---------- */
+function stageCard(num, key, title, text, btns) {
+  var d = isDone(key);
+  return '<div class="step"><div class="step-n">' + num + '</div><div class="step-b"><div class="step-h"><h3>' + title + '</h3><span class="state' + (d ? " done" : "") + '">' + (d ? "Пройдено" : "Не пройдено") + "</span></div><p>" + text + '</p><div class="row">' + btns + "</div></div></div>";
+}
+function viewHome() {
+  return '<section class="panel"><h1>Фішинг чи справжнє повідомлення?</h1>' +
+    '<p class="lead">Листи, SMS і чати: частину написали шахраї за старими шаблонами, частину створив штучний інтелект, решта справжні. Для кожного вирішіть, чи можна йому довіряти.</p>' +
+    '<div class="fields"><label class="f" for="pid">Код учасника<input type="text" id="pid" value="' + esc(S.pid) + '" autocomplete="off" placeholder="наприклад, 9Б-07"></label>' +
+    '<label class="f" for="cls">Клас або група<input type="text" id="cls" value="' + esc(S.cls) + '" autocomplete="off" placeholder="наприклад, 9-Б"></label></div>' +
+    '<p class="note">Код видає вчитель. Не вводьте прізвище.</p>' +
+    (S.err ? '<p class="err" role="alert">' + esc(S.err) + "</p>" : "") +
+    "</section>" +
+    '<section class="panel"><h2>Три етапи</h2><div class="steps">' +
+    stageCard(1, "pre", "Тест до навчання", "16 повідомлень без підказок. Розбір відповідей не показується, щоб не вплинути на другий тест.",
+      '<button class="btn main sm" data-act="begin" data-stage="pre">Почати тест</button>') +
+    stageCard(2, "train", "Навчання", "Прочитайте пам’ятку «СТОП», а потім розберіть 8 повідомлень. Після кожної відповіді буде пояснення.",
+      '<button class="btn ghost sm" data-act="tab" data-v="guide">Пам’ятка СТОП</button><button class="btn main sm" data-act="begin" data-stage="train">Почати навчання</button>') +
+    stageCard(3, "post", "Тест після навчання", "Інші 16 повідомлень, теж без підказок. Після нього покажемо розбір і порівняння з першим тестом.",
+      '<button class="btn main sm" data-act="begin" data-stage="post">Почати тест</button>') +
+    "</div></section>" +
+    '<section class="panel"><details class="box"><summary>Вільне тренування (випадкові повідомлення з бази)</summary><div class="in">' +
+    '<p class="note">Для знайомства з тренажером. Результати цього режиму не враховуються у дослідженні.</p>' +
+    '<fieldset class="conf"><legend>Скільки повідомлень</legend><div class="seg">' +
+    [12, 16, 24].map(function (n) { return '<label><input type="radio" name="len" value="' + n + '"' + (S.n === n ? " checked" : "") + "><span>" + n + "</span></label>"; }).join("") +
+    '</div></fieldset><div class="modes">' +
+    '<button class="mode" data-act="begin" data-stage="free" data-mode="train"><em>Режим</em><b>Навчання</b><span>Розбір після кожної відповіді.</span></button>' +
+    '<button class="mode" data-act="begin" data-stage="free" data-mode="test"><em>Режим</em><b>Тест</b><span>Розбір наприкінці.</span></button>' +
+    "</div></div></details>" +
+    '<details class="box"><summary>Ситуація, яку ви граєте</summary><div class="in"><ul>' +
+    CONTEXT.map(function (c) { return "<li><b>" + c[0] + ":</b> " + esc(c[1]) + "</li>"; }).join("") +
+    "</ul><p class=\"note\">Усі назви вигадані. Під час відповіді можна перевірити відправника й адресу, куди веде посилання.</p></div></details>" +
+    "</section>";
+}
+
+/* ---------- Питання ---------- */
+function viewQuiz() {
+  var m = S.q[S.i], n = S.q.length;
+  var label = S.stage === "free" ? (S.mode === "train" ? "Навчання" : "Тест") : STAGE_NAME[S.stage];
+  var h = '<section class="panel"><div class="prog"><div class="prog-row"><span>Повідомлення ' + (S.i + 1) + " з " + n + "</span><span>" + label + '</span></div><div class="bar"><span style="width:' + Math.round(S.i * 100 / n) + '%"></span></div></div>';
+  h += msgHTML(m);
+  if (S.sender) h += '<div class="reveal"><b>Деталі відправника</b><span class="mono">' + esc(m.det) + "</span></div>";
+  if (S.link && m.link) h += '<div class="reveal"><b>Посилання веде на</b><span class="mono">' + esc(m.link.real) + "</span></div>";
+  if (!S.fb) {
+    h += '<div class="tools"><button class="tool" data-act="sender" aria-pressed="' + S.sender + '">Деталі відправника</button>';
+    if (m.link) h += '<button class="tool" data-act="link" aria-pressed="' + S.link + '">Куди веде посилання</button>';
+    h += "</div>";
+    h += '<fieldset class="conf"><legend>Наскільки ви впевнені?</legend><div class="seg">' +
+      [[1, "Вагаюсь"], [2, "Скоріше так"], [3, "Упевнений"]].map(function (c) {
+        return '<label><input type="radio" name="conf" value="' + c[0] + '"' + (S.conf === c[0] ? " checked" : "") + "><span>" + c[1] + "</span></label>";
+      }).join("") + "</div></fieldset>";
+    h += '<div class="verdict"><button class="btn phish" data-act="answer" data-v="phish">Це фішинг</button><button class="btn safe" data-act="answer" data-v="safe">Це безпечно</button></div>';
+  } else {
+    var a = S.fb;
+    h += '<section class="fb ' + (a.correct ? "ok" : "bad") + '" role="status"><h3>' + (a.correct ? "Правильно" : "Неправильно") + "</h3>" +
+      "<p>Це було: <b>" + ORIGIN[m.origin] + "</b>. Ваша відповідь: " + (a.choice === "phish" ? "фішинг" : "безпечно") + ".</p>" +
+      signsHTML(m) + '<div><button class="btn main" data-act="next" id="nextBtn">' + (S.i + 1 >= n ? "Показати результат" : "Далі") + "</button></div></section>";
+  }
+  return h + "</section>";
+}
+
+/* ---------- Підрахунки ---------- */
+function stats() {
+  var A = S.ans, cat = { classic: [0, 0], ai: [0, 0], legit: [0, 0] };
+  var missed = 0, falseAlarm = 0, nPhish = 0, nLegit = 0, time = 0, cOk = [], cBad = [], us = 0, ul = 0, nl = 0;
+  A.forEach(function (a) {
+    cat[a.origin][1]++;
+    if (a.correct) cat[a.origin][0]++;
+    if (a.phish) { nPhish++; if (a.choice === "safe") missed++; } else { nLegit++; if (a.choice === "phish") falseAlarm++; }
+    time += a.secs; (a.correct ? cOk : cBad).push(a.conf);
+    if (a.sender) us++;
+    if (a.hasLink) { nl++; if (a.link) ul++; }
+  });
+  function avg(x) { return x.length ? x.reduce(function (p, c) { return p + c; }, 0) / x.length : null; }
+  var ok = cat.classic[0] + cat.ai[0] + cat.legit[0];
+  return { cat: cat, ok: ok, n: A.length, missed: missed, nPhish: nPhish, falseAlarm: falseAlarm, nLegit: nLegit, avgTime: A.length ? time / A.length : 0, confOk: avg(cOk), confBad: avg(cBad), us: us, ul: ul, nl: nl };
+}
+function insight(st) {
+  var c = st.cat.classic, a = st.cat.ai, pc = pct(c[0], c[1]), pa = pct(a[0], a[1]), t;
+  if (pa < pc) t = "Фішинг від ШІ ви розпізнали гірше (" + pa + "%), ніж класичний (" + pc + "%). Без помилок у тексті довіряти хочеться більше, тому перевіряйте відправника, посилання і прохання, а не мову.";
+  else if (pa > pc) t = "Фішинг від ШІ ви розпізнали краще (" + pa + "%), ніж класичний (" + pc + "%). Схоже, ви перевіряєте відправника й адресу, а не помилки.";
+  else t = "Обидва види фішингу ви розпізнали однаково добре (" + pa + "%).";
+  if (st.nLegit && st.falseAlarm > 0) t += " Ви ще й " + st.falseAlarm + " раз(и) визнали справжнє повідомлення фішингом. Надмірна підозріливість теж дає збої, наприклад, ви можете пропустити важливий лист.";
+  return t;
+}
+
+/* ---------- Код результату ---------- */
+function makeCode() {
+  function c(v) { return String(v || "").replace(/[|,:\r\n]/g, "_").trim(); }
+  var ans = S.ans.map(function (a) { return [a.id, a.choice === "phish" ? "p" : "s", a.conf, a.secs.toFixed(1), a.sender ? 1 : 0, a.hasLink ? (a.link ? 1 : 0) : "-"].join(":"); }).join(",");
+  return ["AF1", c(S.pid), c(S.cls), S.stage, S.setid, S.date, ans].join("|");
+}
+function parseCode(line) {
+  var p = String(line).trim().split("|");
+  if (p.length < 7 || p[0] !== "AF1") return null;
+  var answers = p[6].split(",").map(function (t) {
+    var f = t.split(":"), m = byId(f[0]);
+    if (!m || f.length < 6) return null;
+    var choice = f[1] === "p" ? "phish" : "safe";
+    return { id: f[0], channel: m.channel, origin: m.origin, phish: m.phish, choice: choice, correct: (choice === "phish") === m.phish, conf: parseInt(f[2], 10) || 0, secs: parseFloat(f[3]) || 0, sender: f[4] === "1", hasLink: f[5] !== "-", link: f[5] === "1" };
+  }).filter(Boolean);
+  if (!answers.length) return null;
+  return { pid: p[1], cls: p[2], stage: p[3], set: p[4], date: p[5], answers: answers };
+}
+function finish() {
+  S.date = new Date().toISOString().replace(/\.\d+Z$/, "Z");
+  S.code = makeCode();
+  var codes = ls("af2_codes", []); codes.push(S.code); lsSet("af2_codes", codes.slice(-300));
+  var st = stats();
+  if (S.stage !== "free") {
+    markDone(S.stage);
+    var r = ls("af2_res", {}); r[pkey(S.pid) + "|" + S.stage] = { ok: st.ok, n: st.n, cat: st.cat }; lsSet("af2_res", r);
+  }
+  S.saved = (S.db || APPS_URL) && S.stage !== "free" ? "pending" : "local";
+  S.view = "result"; render(); window.scrollTo(0, 0);
+  saveRemote(st);
+}
+
+/* ---------- Спільна база ---------- */
+function safeId(t) { return String(t).replace(/[^A-Za-z0-9_\-.~:@+]/g, function (c) { return "~" + c.charCodeAt(0).toString(16); }).slice(0, 190); }
+function sendSheet(doc) {
+  if (!APPS_URL) return Promise.resolve(false);
+  return fetch(APPS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(doc) })
+    .then(function (r) { return r.json(); }).then(function (j) { return !!(j && j.ok); }).catch(function () { return false; });
+}
+function saveRemote(st) {
+  if (S.stage === "free" || (!S.db && !APPS_URL)) { S.saved = "local"; refreshSaveNote(); return; }
+  var doc = { code: S.code, pid: S.pid, cls: S.cls, stage: S.stage, set: S.setid, date: S.date, ok: st.ok, n: st.n };
+  var a = S.db ? S.db.collection("runs").doc(safeId(pkey(S.pid) + "_" + S.stage)).set(doc).then(function () { return true; }, function () { return false; }) : Promise.resolve(false);
+  var b = sendSheet(doc);
+  Promise.all([a, b]).then(function (r) { S.saved = r[0] || r[1] ? "shared" : "local"; refreshSaveNote(); });
+}
+function refreshSaveNote() {
+  var el = document.getElementById("saveNote"); if (!el) return;
+  el.textContent = S.saved === "shared" ? "Результат збережено в базі дослідження."
+    : S.saved === "pending" ? "Зберігаю результат…"
+    : S.stage === "free" ? "Вільне тренування не записується в дослідження."
+    : "Автоматично зберегти не вдалося (немає доступу до спільної бази). Скопіюйте код і надішліть його вчителю.";
+  var b = document.getElementById("formBtn"); if (b) b.hidden = S.saved === "shared";
+}
+function formLink() { return FORM_URL && FORM_ENTRY ? FORM_URL + (FORM_URL.indexOf("?") < 0 ? "?" : "&") + "usp=pp_url&" + encodeURIComponent(FORM_ENTRY) + "=" + encodeURIComponent(S.code) : ""; }
+var unsub = null;
+function startRemote() {
+  if (!S.db || unsub) return;
+  S.dbState = "loading";
+  unsub = S.db.collection("runs").limit(1000).onSnapshot(function (snap) {
+    S.dbCodes = snap.docs.map(function (d) { var x = d.data(); return x && x.code; }).filter(Boolean);
+    S.dbState = "ok";
+    if (S.view === "data") render();
+  }, function () { S.dbState = "error"; S.dbCodes = []; if (S.view === "data") render(); });
+}
+
+/* ---------- Результат ---------- */
+function viewResult() {
+  var st = stats(), p = pct(st.ok, st.n), full = S.stage !== "pre";
+  var names = { classic: "Класичний фішинг", ai: "Фішинг від ШІ", legit: "Справжні повідомлення" };
+  var h = '<section class="panel"><h2>' + STAGE_NAME[S.stage] + (S.pid ? ": " + esc(S.pid) : "") + "</h2>" +
+    '<div class="score"><big>' + st.ok + "/" + st.n + "</big><span>" + p + "% правильних відповідей</span></div>";
+  if (S.stage === "pre") h += '<p class="lead">Дякуємо. Розбір і порівняння з другим тестом з’являться після третього етапу, щоб не вплинути на його результат. Далі: етап 2, навчання.</p>';
+  if (S.stage === "post") {
+    var pre = ls("af2_res", {})[pkey(S.pid) + "|pre"];
+    if (pre) {
+      var d = st.ok - pre.ok;
+      h += '<div class="insight">До навчання: ' + pre.ok + " з " + pre.n + ". Після навчання: " + st.ok + " з " + st.n + ". Зміна: " + (d > 0 ? "+" : "") + d + ".</div>";
+    }
+  }
+  if (S.stage === "train") h += '<p class="lead">Далі: етап 3, тест після навчання.</p>';
+  if (full) {
+    h += '<div class="cats">' + ["classic", "ai", "legit"].map(function (k) {
+      var v = st.cat[k], pp = pct(v[0], v[1]);
+      return '<div class="cat"><div class="cat-row"><span>' + names[k] + "</span><b>" + v[0] + " з " + v[1] + " · " + pp + '%</b></div><div class="meter"><span class="m-' + k + '" style="width:' + pp + '%"></span></div></div>';
+    }).join("") + "</div>" +
+      '<div class="insight">' + insight(st) + "</div>" +
+      '<div class="stats">' +
+      '<div class="stat"><b>' + st.missed + " з " + st.nPhish + "</b><span>фішингових повідомлень пропущено</span></div>" +
+      '<div class="stat"><b>' + st.falseAlarm + " з " + st.nLegit + "</b><span>справжніх визнано фішингом</span></div>" +
+      '<div class="stat"><b>' + st.avgTime.toFixed(1) + " с</b><span>середній час на повідомлення</span></div>" +
+      '<div class="stat"><b>' + pct(st.us, st.n) + "%</b><span>разів перевірено відправника</span></div>" +
+      '<div class="stat"><b>' + pct(st.ul, st.nl) + "%</b><span>разів перевірено адресу посилання</span></div>" +
+      '<div class="stat"><b>' + (st.confOk == null ? "—" : st.confOk.toFixed(1)) + " / " + (st.confBad == null ? "—" : st.confBad.toFixed(1)) + "</b><span>впевненість: у правильних / у помилкових (1–3)</span></div></div>";
+  }
+  h += "</section>";
+
+  if (full) {
+    h += '<section class="panel"><h2>Розбір відповідей</h2><div class="review">' + S.ans.map(function (a, idx) {
+      var m = byId(a.id), title = m.subject || m.body[0];
+      return '<details class="rv"><summary><span class="mark ' + (a.correct ? "y" : "n") + '">' + (a.correct ? "✓" : "✗") + '</span><span class="rv-t"><b>' + (idx + 1) + ". " + esc(m.from) + " — " + esc(title.length > 70 ? title.slice(0, 70) + "…" : title) + "</b><span>" + ORIGIN[m.origin] + " · ваша відповідь: " + (a.choice === "phish" ? "фішинг" : "безпечно") + "</span></span></summary>" +
+        '<div class="in">' + msgHTML(m) + signsHTML(m) + "</div></details>";
+    }).join("") + "</div></section>";
+  }
+
+  h += '<section class="panel"><h2>Збереження результату</h2><p class="lead">Якщо результат не зберігся автоматично, скопіюйте код і надішліть його вчителю. У ньому всі ваші відповіді, нічого іншого пересилати не потрібно.</p>' +
+    '<textarea class="short" id="code" readonly aria-label="Код результату">' + esc(S.code) + "</textarea>" +
+    '<p class="note" id="saveNote"></p>' +
+    '<div class="row"><button class="btn main" data-act="copy" data-target="code">Скопіювати код</button>' +
+    (formLink() ? '<a class="btn ghost" id="formBtn" href="' + esc(formLink()) + '" target="_blank" rel="noopener">Надіслати через форму</a>' : "") +
+    '<button class="btn ghost" data-act="again">На головну</button></div></section>';
+  return h;
+}
+
+/* ---------- Статистика ---------- */
+function lgamma(x) {
+  var c = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+  var y = x, t = x + 5.5; t -= (x + 0.5) * Math.log(t);
+  var s = 1.000000000190015; for (var j = 0; j < 6; j++) { y += 1; s += c[j] / y; }
+  return -t + Math.log(2.5066282746310005 * s / x);
+}
+function betacf(a, b, x) {
+  var FP = 1e-30, qab = a + b, qap = a + 1, qam = a - 1, c = 1, d = 1 - qab * x / qap;
+  if (Math.abs(d) < FP) d = FP; d = 1 / d; var h = d;
+  for (var m = 1; m <= 200; m++) {
+    var m2 = 2 * m, aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FP) d = FP; c = 1 + aa / c; if (Math.abs(c) < FP) c = FP; d = 1 / d; h *= d * c;
+    aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FP) d = FP; c = 1 + aa / c; if (Math.abs(c) < FP) c = FP; d = 1 / d;
+    var del = d * c; h *= del; if (Math.abs(del - 1) < 3e-9) break;
+  }
+  return h;
+}
+function betai(a, b, x) {
+  if (x <= 0) return 0; if (x >= 1) return 1;
+  var bt = Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+  return x < (a + 1) / (a + b + 2) ? bt * betacf(a, b, x) / a : 1 - bt * betacf(b, a, 1 - x) / b;
+}
+function tP(t, df) { return betai(df / 2, 0.5, df / (df + t * t)); }
+function clean(a) { return a.filter(function (x) { return x != null && !isNaN(x); }); }
+function mean(a) { a = clean(a); return a.length ? a.reduce(function (p, c) { return p + c; }, 0) / a.length : null; }
+function sdev(a, m) { if (a.length < 2) return null; var s = 0; a.forEach(function (x) { s += (x - m) * (x - m); }); return Math.sqrt(s / (a.length - 1)); }
+function paired(d) {
+  d = clean(d);
+  var n = d.length;
+  if (n < 2) return { n: n };
+  var m = mean(d), s = sdev(d, m), t, p;
+  if (s === 0) { t = m === 0 ? 0 : Infinity; p = m === 0 ? 1 : 0; }
+  else { t = m / (s / Math.sqrt(n)); p = tP(Math.abs(t), n - 1); }
+  return { n: n, mean: m, sd: s, t: t, df: n - 1, p: p, dz: s > 0 ? m / s : null };
+}
+function runStats(r) {
+  var c = { classic: [0, 0], ai: [0, 0], legit: [0, 0] }, ok = 0, miss = 0, nP = 0, fa = 0, nL = 0, conf = 0, secs = 0, us = 0, ul = 0, nl = 0;
+  r.answers.forEach(function (a) {
+    c[a.origin][1]++;
+    if (a.correct) { c[a.origin][0]++; ok++; }
+    if (a.phish) { nP++; if (a.choice === "safe") miss++; } else { nL++; if (a.choice === "phish") fa++; }
+    conf += a.conf; secs += a.secs; if (a.sender) us++; if (a.hasLink) { nl++; if (a.link) ul++; }
+  });
+  var n = r.answers.length;
+  function rate(x) { return x[1] ? x[0] / x[1] : null; }
+  return { n: n, ok: ok, acc: ok / n, classic: rate(c.classic), ai: rate(c.ai), legit: rate(c.legit), miss: nP ? miss / nP : null, fa: nL ? fa / nL : null, conf: conf / n, secs: secs / n, us: us / n, ul: nl ? ul / nl : null };
+}
+function analyze(text) {
+  var runs = {}, bad = 0, total = 0;
+  String(text).split(/\r?\n/).forEach(function (ln) {
+    if (!ln.trim()) return;
+    total++;
+    var r = parseCode(ln);
+    if (!r) { bad++; return; }
+    var key = pkey(r.pid) + "|" + r.stage + (r.stage === "free" ? "|" + r.date : "");
+    if (!runs[key] || r.date > runs[key].date) runs[key] = r;
+  });
+  var list = Object.keys(runs).map(function (k) { var r = runs[k]; r.st = runStats(r); return r; });
+  var people = {};
+  list.forEach(function (r) { if (r.stage === "pre" || r.stage === "post") { var k = pkey(r.pid); people[k] = people[k] || { pid: r.pid, cls: r.cls }; people[k][r.stage] = r; } });
+  var P = Object.keys(people).map(function (k) { return people[k]; });
+  var both = P.filter(function (x) { return x.pre && x.post; });
+  function agg(stage) {
+    var rs = list.filter(function (r) { return r.stage === stage; });
+    function m(f) { return mean(rs.map(function (r) { return r.st[f]; })); }
+    return { n: rs.length, acc: m("acc"), classic: m("classic"), ai: m("ai"), legit: m("legit"), miss: m("miss"), fa: m("fa"), conf: m("conf"), secs: m("secs"), us: m("us"), ul: m("ul") };
+  }
+  var diffs = {};
+  ["acc", "classic", "ai", "legit"].forEach(function (f) { diffs[f] = paired(both.map(function (x) { return x.post.st[f] == null || x.pre.st[f] == null ? null : x.post.st[f] - x.pre.st[f]; })); });
+  function aiVsClassic(stage) { return paired(P.filter(function (x) { return x[stage]; }).map(function (x) { var s = x[stage].st; return s.ai == null || s.classic == null ? null : s.ai - s.classic; })); }
+  return { total: total, bad: bad, runs: list, people: P, both: both.length, aggPre: agg("pre"), aggPost: agg("post"), diffs: diffs, avc: { pre: aiVsClassic("pre"), post: aiVsClassic("post") } };
+}
+function csvRuns(runs) {
+  function q(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+  var rows = ["date,participant,group,stage,set,message,channel,origin,truth,answer,correct,confidence,seconds,checked_sender,checked_link"];
+  runs.forEach(function (r) {
+    r.answers.forEach(function (a) {
+      rows.push([q(r.date), q(r.pid), q(r.cls), r.stage, r.set, a.id, a.channel, a.origin, a.phish ? "phish" : "safe", a.choice, a.correct ? 1 : 0, a.conf, a.secs.toFixed(1), a.sender ? 1 : 0, a.hasLink ? (a.link ? 1 : 0) : ""].join(","));
+    });
+  });
+  return rows.join("\n");
+}
+function P0(x) { return x == null ? "—" : Math.round(x * 100) + "%"; }
+function fmtP(p) { return p == null ? "—" : p < 0.001 ? "<0,001" : p.toFixed(3).replace(".", ","); }
+function fmtT(t) { return t == null ? "—" : isFinite(t) ? t.toFixed(2).replace(".", ",") : "∞"; }
+function pp(x) { return x == null ? "—" : (x > 0 ? "+" : "") + (x * 100).toFixed(1).replace(".", ",") + " п.п."; }
+
+function anaHTML(a) {
+  if (!a) return "";
+  var h = '<p class="note">Рядків: ' + a.total + ", прочитано кодів: " + a.runs.length + (a.bad ? ", не розпізнано: " + a.bad : "") + ". Учасників з обома тестами: " + a.both + ".</p>";
+  if (!a.runs.length) return h + '<p class="err">Жодного коду не розпізнано. Код починається з «AF1|».</p>';
+  var rows = [["Усього правильних", "acc"], ["Класичний фішинг", "classic"], ["Фішинг від ШІ", "ai"], ["Справжні повідомлення", "legit"], ["Пропущено фішингу", "miss"], ["Хибні тривоги", "fa"], ["Перевірено відправника", "us"], ["Перевірено посилання", "ul"]];
+  h += "<h2>Середні показники</h2><div class=\"tbl\"><table><thead><tr><th>Показник</th><th>До навчання (N=" + a.aggPre.n + ")</th><th>Після навчання (N=" + a.aggPost.n + ")</th></tr></thead><tbody>" +
+    rows.map(function (r) { return "<tr><td>" + r[0] + "</td><td>" + P0(a.aggPre[r[1]]) + "</td><td>" + P0(a.aggPost[r[1]]) + "</td></tr>"; }).join("") +
+    "<tr><td>Середня впевненість (1–3)</td><td>" + (a.aggPre.conf == null ? "—" : a.aggPre.conf.toFixed(2)) + "</td><td>" + (a.aggPost.conf == null ? "—" : a.aggPost.conf.toFixed(2)) + "</td></tr>" +
+    "<tr><td>Середній час на повідомлення, с</td><td>" + (a.aggPre.secs == null ? "—" : a.aggPre.secs.toFixed(1)) + "</td><td>" + (a.aggPost.secs == null ? "—" : a.aggPost.secs.toFixed(1)) + "</td></tr></tbody></table></div>";
+
+  h += "<h2>Зміна після навчання (парне порівняння)</h2>";
+  if (a.both < 2) h += '<p class="note">Потрібно щонайменше двоє учасників, які пройшли обидва тести.</p>';
+  else h += '<div class="tbl"><table><thead><tr><th>Показник</th><th>Середня зміна</th><th>t</th><th>df</th><th>p</th><th>d</th></tr></thead><tbody>' +
+    [["Усього правильних", "acc"], ["Класичний фішинг", "classic"], ["Фішинг від ШІ", "ai"], ["Справжні повідомлення", "legit"]].map(function (r) {
+      var d = a.diffs[r[1]];
+      return "<tr><td>" + r[0] + "</td><td>" + pp(d.mean) + "</td><td>" + fmtT(d.t) + "</td><td>" + (d.df == null ? "—" : d.df) + "</td><td>" + fmtP(d.p) + "</td><td>" + (d.dz == null ? "—" : d.dz.toFixed(2).replace(".", ",")) + "</td></tr>";
+    }).join("") + "</tbody></table></div>";
+
+  h += "<h2>Фішинг від ШІ проти класичного (у межах однієї людини)</h2>" +
+    '<div class="tbl"><table><thead><tr><th>Етап</th><th>N</th><th>Різниця точності (ШІ мінус класичний)</th><th>t</th><th>p</th></tr></thead><tbody>' +
+    [["До навчання", "pre"], ["Після навчання", "post"]].map(function (r) {
+      var d = a.avc[r[1]];
+      return "<tr><td>" + r[0] + "</td><td>" + d.n + "</td><td>" + pp(d.mean) + "</td><td>" + fmtT(d.t) + "</td><td>" + fmtP(d.p) + "</td></tr>";
+    }).join("") + "</tbody></table></div>" +
+    '<p class="note">Мінус означає, що фішинг від ШІ розпізнавали гірше за класичний. p менше 0,05 зазвичай вважають ознакою значущої різниці, d (розмір ефекту) близько 0,2 малий, 0,5 середній, 0,8 великий. При малій вибірці висновки обережні.</p>';
+
+  h += "<h2>Учасники</h2><div class=\"tbl\"><table><thead><tr><th>Код</th><th>Група</th><th>До</th><th>Після</th><th>Зміна</th></tr></thead><tbody>" +
+    a.people.map(function (x) {
+      var pre = x.pre ? x.pre.st : null, post = x.post ? x.post.st : null;
+      return "<tr><td>" + esc(x.pid) + "</td><td>" + esc(x.cls || "—") + "</td><td>" + (pre ? pre.ok + "/" + pre.n : "—") + "</td><td>" + (post ? post.ok + "/" + post.n : "—") + "</td><td>" + (pre && post ? pp(post.acc - pre.acc) : "—") + "</td></tr>";
+    }).join("") + "</tbody></table></div>" +
+    '<h2>Усі відповіді</h2><textarea id="csvOut" readonly aria-label="Усі відповіді у форматі CSV">' + esc(csvRuns(a.runs)) + '</textarea>' +
+    '<div class="row"><button class="btn main" data-act="copy" data-target="csvOut">Скопіювати таблицю відповідей</button></div>';
+  return h;
+}
+function allCodes() {
+  var seen = {}, out = [];
+  S.dbCodes.concat(S.sheetCodes, S.dataText.split(/\r?\n/)).forEach(function (l) { l = l.trim(); if (l && !seen[l]) { seen[l] = 1; out.push(l); } });
+  return out.join("\n");
+}
+function viewData() {
+  var txt = allCodes(); S.ana = txt ? analyze(txt) : null;
+  var status = S.db
+    ? (S.dbState === "ok" ? "Підключено до спільної бази. Результати учнів з’являються тут автоматично, записів у базі: " + S.dbCodes.length + "."
+      : S.dbState === "error" ? "Не вдалося прочитати спільну базу. Скористайтеся ручним додаванням кодів нижче."
+      : "Завантажую дані зі спільної бази…")
+    : APPS_URL
+      ? (S.sheetState === "ok" ? "Дані завантажено з Google Таблиці, записів: " + S.sheetCodes.length + "."
+        : S.sheetState === "loading" ? "Завантажую дані з таблиці…"
+        : S.sheetState === "error" ? "Не вдалося завантажити дані: перевірте ключ доступу та адресу застосунку."
+        : "Дані беруться з Google Таблиці. Введіть ключ доступу й натисніть «Завантажити».")
+      : "База не підключена. Додайте коди вручну.";
+  return '<section class="panel"><h1>Дані дослідження</h1>' +
+    '<p class="lead">' + esc(status) + '</p>' +
+    (APPS_URL ? '<div class="fields"><label class="f" for="skey">Ключ доступу<input type="text" id="skey" value="' + esc(S.skey) + '" autocomplete="off"></label><div class="row" style="align-items:end"><button class="btn main sm" data-act="loadsheet">Завантажити</button></div></div>' : "") +
+    '<details class="box"><summary>Додати коди вручну</summary><div class="in"><p class="note">Для результатів, які не потрапили в базу. Один код на рядок.</p>' +
+    '<label class="f" for="codes">Коди результатів<textarea id="codes" placeholder="AF1|9Б-07|9-Б|pre|A|2026-10-22T07:27:48Z|M02:s:2:3.1:0:0,...">' + esc(S.dataText) + "</textarea></label>" +
+    '<div class="row"><button class="btn main" data-act="analyze">Порахувати</button><button class="btn ghost" data-act="addlocal">Додати коди з цього пристрою</button><button class="btn ghost" data-act="clearcodes">Очистити</button></div></div></details>' +
+    "</section>" + (S.ana ? '<section class="panel">' + anaHTML(S.ana) + "</section>" : "");
+}
+
+/* ---------- Пам’ятка ---------- */
+function viewGuide() {
+  return '<section class="panel"><h1>Пам’ятка «СТОП»</h1><p class="lead">Чотири перевірки, які працюють і для листів зі старими помилками, і для тексту від ШІ. Якщо щось викликає сумнів, зупиніться і перевірте іншим каналом.</p>' +
+    '<div class="stop">' +
+    '<div><span class="ltr">С</span><h3>Сторона, яка пише</h3><p>Порівняйте адресу відправника з офіційною. Дивіться на домен після @, а не на ім’я. Ім’я відправника в SMS можна підробити.</p></div>' +
+    '<div><span class="ltr">Т</span><h3>Тиск і терміновість</h3><p>«Протягом 24 годин», «лише 2 години», загроза блокування. Шахраю потрібно, щоб ви не встигли подумати.</p></div>' +
+    '<div><span class="ltr">О</span><h3>Облікові дані та гроші</h3><p>Пароль, код із SMS, дані картки або «збір за доставку» не просять в листах і чатах. Нікому не повідомляйте код.</p></div>' +
+    '<div><span class="ltr">П</span><h3>Посилання</h3><p>Перевірте, куди веде посилання. Напис може бути правдоподібним, а справжня адреса іншою. Надійніше ввести адресу сайту вручну.</p></div>' +
+    "</div></section>" +
+    '<section class="panel"><h2>Чому текст від ШІ складніший</h2><ul class="plain">' +
+    "<li>Немає помилок і дивних зворотів, тому звичне правило «шукайте помилки» більше не працює.</li>" +
+    "<li>Лист можна швидко підлаштувати під вас: ім’я, школа, сервіс, яким ви користуєтесь.</li>" +
+    "<li>Тон ділового листа, банку чи підтримки виходить переконливим, навіть коли лист від шахрая.</li>" +
+    "<li>Тому довіряйте перевіряльним фактам: домен, адреса посилання, що саме просять зробити, і чи очікували ви це повідомлення.</li></ul></section>" +
+    '<section class="panel"><h2>Що робити, якщо сумніваєтесь</h2><ul class="plain">' +
+    "<li>Не натискайте на посилання і не відкривайте вкладення.</li>" +
+    "<li>Відкрийте офіційний сайт чи застосунок самостійно й перевірте там.</li>" +
+    "<li>Якщо пишуть від імені знайомого, зв’яжіться з ним іншим каналом.</li>" +
+    "<li>Покажіть повідомлення дорослим, учителю чи в підтримку сервісу. Якщо ви вже ввели дані, змініть пароль і зверніться до банку.</li></ul></section>";
+}
+function viewAbout() {
+  return '<section class="panel"><h1>Про проєкт</h1>' +
+    '<p class="lead">Тренажер створено для роботи МАН «Ефективність виявлення фішингових повідомлень, створених за допомогою штучного інтелекту». Він навчає учнів розпізнавати фішинг і водночас збирає дані для порівняння до та після навчання.</p>' +
+    "<h2>Схема дослідження</h2>" +
+    '<ul class="plain"><li><b>Етап 1.</b> Тест до навчання: 16 повідомлень без розбору.</li>' +
+    "<li><b>Етап 2.</b> Навчання: пам’ятка «СТОП» і 8 повідомлень з розбором після кожної відповіді.</li>" +
+    "<li><b>Етап 3.</b> Тест після навчання: інші 16 повідомлень без розбору. Розбір і порівняння з першим тестом показуються тільки після нього.</li></ul>" +
+    "<h2>Як побудовані набори</h2>" +
+    '<ul class="plain"><li>База з ' + MSGS.length + " повідомлень у трьох каналах: e-mail, SMS і месенджер.</li>" +
+    "<li>Два тести (A і B) однакові за складом: по 5 класичних фішингових, 6 створених ШІ та 5 справжніх. Повідомлення не повторюються ні між тестами, ні в навчанні.</li>" +
+    "<li>Набір A чи B для першого тесту визначається кодом учасника. Так половина учнів починає з A, а половина з B, і різниця між наборами не впливає на результат.</li>" +
+    "<li>Порядок повідомлень у кожному тесті випадковий.</li>" +
+    "<li>Фішинг від ШІ написано великою мовною моделлю за запитом змоделювати такі листи. Усі бренди й адреси вигадані.</li></ul>" +
+    "<h2>Що вимірюється</h2>" +
+    '<ul class="plain"><li>Частка правильних відповідей окремо для класичного фішингу, фішингу від ШІ та справжніх повідомлень.</li>' +
+    "<li>Пропущений фішинг і хибні тривоги.</li>" +
+    "<li>Час відповіді та впевненість (1–3).</li>" +
+    "<li>Чи перевіряв учень відправника та адресу посилання.</li></ul>" +
+    "<h2>Збір даних</h2>" +
+    '<p class="lead">Після кожного етапу результат автоматично записується в спільну базу дослідження. У розділі «Дані» сторінка сама рахує середні, зміну після навчання з t-критерієм для парних вибірок і порівняння фішингу від ШІ з класичним. Якщо запис у базу не вдався, учень отримує код результату й передає його вручну.</p>' +
+    '<p class="note">Обмеження: набір невеликий, тому для висновків потрібна достатня кількість учасників (бажано не менше 30). Дані зберігаються в браузері учня, поки він не очистить його.</p></section>';
+}
+
+/* ---------- Керування ---------- */
+function render() {
+  var v = S.view, body;
+  if (v === "home") body = viewHome();
+  else if (v === "quiz") body = viewQuiz();
+  else if (v === "result") body = viewResult();
+  else if (v === "guide") body = viewGuide();
+  else if (v === "data") body = viewData();
+  else body = viewAbout();
+  document.getElementById("app").innerHTML = header() + body;
+  var nb = document.getElementById("nextBtn");
+  if (nb) nb.focus();
+  if (v === "result") refreshSaveNote();
+}
+function begin(stage, mode) {
+  syncInputs();
+  if (stage !== "free" && S.pid.trim().length < 2) {
+    S.err = "Введіть код учасника (мінімум 2 символи), щоб почати етап.";
+    render();
+    return;
+  }
+  S.err = "";
+  lsSet("af2_pid", S.pid); lsSet("af2_cls", S.cls);
+  var o = orderFor(pkey(S.pid)), msgs;
+  S.stage = stage; S.date = "";
+  if (stage === "pre") { S.setid = o.pre; msgs = setMsgs(o.pre); S.mode = "test"; }
+  else if (stage === "post") { S.setid = o.post; msgs = setMsgs(o.post); S.mode = "test"; }
+  else if (stage === "train") { S.setid = "T"; msgs = setMsgs("T"); S.mode = "train"; }
+  else {
+    var L = document.querySelector('input[name="len"]:checked'); if (L) S.n = parseInt(L.value, 10);
+    S.setid = "R"; msgs = pickSet(S.n); S.mode = mode || "train";
+  }
+  S.q = shuffle(msgs); S.i = 0; S.ans = []; S.view = "quiz"; startQ();
+}
+function startQ() { S.t0 = Date.now(); S.sender = false; S.link = false; S.conf = 2; S.fb = null; render(); window.scrollTo(0, 0); }
+function answer(choice) {
+  var m = S.q[S.i];
+  var a = { id: m.id, channel: m.channel, origin: m.origin, phish: m.phish, choice: choice, correct: (choice === "phish") === m.phish, conf: S.conf, secs: (Date.now() - S.t0) / 1000, sender: S.sender, link: S.link, hasLink: !!m.link };
+  S.ans.push(a);
+  if (S.mode === "train") { S.fb = a; render(); } else next();
+}
+function next() { S.i++; if (S.i >= S.q.length) finish(); else startQ(); }
+function copyFrom(id, btn) {
+  var ta = document.getElementById(id), label = btn.textContent;
+  function done(ok) { btn.textContent = ok ? "Скопійовано" : "Виділено: натисніть Ctrl+C"; setTimeout(function () { btn.textContent = label; }, 2500); }
+  function fallback() { ta.focus(); ta.select(); done(false); }
+  try { navigator.clipboard.writeText(ta.value).then(function () { done(true); }, fallback); } catch (e) { fallback(); }
+}
+
+document.addEventListener("click", function (e) {
+  var el = e.target.closest("[data-act]");
+  if (!el) return;
+  var act = el.getAttribute("data-act");
+  if (act === "tab") { syncInputs(); S.view = el.getAttribute("data-v"); render(); window.scrollTo(0, 0); }
+  else if (act === "begin") begin(el.getAttribute("data-stage"), el.getAttribute("data-mode"));
+  else if (act === "sender") { S.sender = !S.sender; render(); }
+  else if (act === "link") { S.link = !S.link; render(); }
+  else if (act === "answer") answer(el.getAttribute("data-v"));
+  else if (act === "next") next();
+  else if (act === "copy") copyFrom(el.getAttribute("data-target"), el);
+  else if (act === "again") { S.view = "home"; S.err = ""; render(); window.scrollTo(0, 0); }
+  else if (act === "analyze") { syncInputs(); S.ana = analyze(S.dataText); render(); }
+  else if (act === "addlocal") {
+    syncInputs();
+    var have = {}; S.dataText.split(/\r?\n/).forEach(function (l) { have[l.trim()] = 1; });
+    var add = ls("af2_codes", []).filter(function (c) { return !have[c]; });
+    S.dataText = (S.dataText.trim() ? S.dataText.replace(/\s+$/, "") + "\n" : "") + add.join("\n");
+    render();
+  }
+  else if (act === "loadsheet") {
+    syncInputs(); S.sheetState = "loading"; render();
+    fetch(APPS_URL + (APPS_URL.indexOf("?") < 0 ? "?" : "&") + "key=" + encodeURIComponent(S.skey.trim()))
+      .then(function (r) { return r.json(); })
+      .then(function (j) { if (j && j.ok) { S.sheetCodes = j.codes || []; S.sheetState = "ok"; } else { S.sheetState = "error"; } render(); })
+      .catch(function () { S.sheetState = "error"; render(); });
+  }
+  else if (act === "clearcodes") { S.dataText = ""; S.ana = null; render(); }
+});
+document.addEventListener("change", function (e) {
+  if (e.target.name === "conf") S.conf = parseInt(e.target.value, 10);
+  else if (e.target.name === "len") S.n = parseInt(e.target.value, 10);
+  else if (e.target.id === "pid" || e.target.id === "cls") syncInputs();
+});
+render();
+try {
+  if (window.claude && window.claude.use) {
+    window.claude.use("db").then(function (db) {
+      if (!db) return;
+      S.db = db; startRemote(); syncInputs(); render();
+    }, function () {});
+  }
+} catch (e) {}
+</script>
+
+</body>
+</html>
